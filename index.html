@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Racer Touch - RakbonGPT</title>
+    <style>
+        body {
+            margin: 0;
+            background: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        #gameContainer {
+            position: relative;
+        }
+        canvas {
+            background: #444;
+            border: 4px solid #fff;
+            display: block;
+            border-radius: 10px;
+        }
+        .ui {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        /* Style Tombol Panah */
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .btn {
+            width: 80px;
+            height: 80px;
+            background: #555;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            color: white;
+            user-select: none;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:active {
+            background: #888;
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ui">Score: <span id="score">0</span></div>
+    
+    <div id="gameContainer">
+        <canvas id="road" width="300" height="450"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="btn" id="leftBtn">◀</div>
+        <div class="btn" id="rightBtn">▶</div>
+    </div>
+
+<script>
+    const canvas = document.getElementById("road");
+    const ctx = canvas.getContext("2d");
+    const scoreDisplay = document.getElementById("score");
+
+    const player = {
+        x: 130,
+        y: 370,
+        w: 40,
+        h: 70,
+        speed: 7,
+        color: "#3498db"
+    };
+
+    let enemies = [];
+    let score = 0;
+    let gameSpeed = 4;
+    let frameCount = 0;
+    let moveLeft = false;
+    let moveRight = false;
+
+    // Kontrol Keyboard (Laptop)
+    document.addEventListener("keydown", (e) => {
+        if(e.code === "ArrowLeft") moveLeft = true;
+        if(e.code === "ArrowRight") moveRight = true;
+    });
+    document.addEventListener("keyup", (e) => {
+        if(e.code === "ArrowLeft") moveLeft = false;
+        if(e.code === "ArrowRight") moveRight = false;
+    });
+
+    // Kontrol Tombol Layar (HP)
+    const btnL = document.getElementById("leftBtn");
+    const btnR = document.getElementById("rightBtn");
+
+    btnL.addEventListener("touchstart", (e) => { e.preventDefault(); moveLeft = true; });
+    btnL.addEventListener("touchend", () => moveLeft = false);
+    btnL.addEventListener("mousedown", () => moveLeft = true);
+    btnL.addEventListener("mouseup", () => moveLeft = false);
+
+    btnR.addEventListener("touchstart", (e) => { e.preventDefault(); moveRight = true; });
+    btnR.addEventListener("touchend", () => moveRight = false);
+    btnR.addEventListener("mousedown", () => moveRight = true);
+    btnR.addEventListener("mouseup", () => moveRight = false);
+
+    function spawnEnemy() {
+        const lanes = [20, 80, 140, 200, 240];
+        let randomX = lanes[Math.floor(Math.random() * lanes.length)];
+        enemies.push({ x: randomX, y: -100, w: 40, h: 70, color: "#e74c3c" });
+    }
+
+    function drawCar(obj) {
+        ctx.fillStyle = obj.color;
+        ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        // Ban
+        ctx.fillStyle = "#000";
+        ctx.fillRect(obj.x-4, obj.y+10, 4, 15);
+        ctx.fillRect(obj.x+obj.w, obj.y+10, 4, 15);
+        ctx.fillRect(obj.x-4, obj.y+45, 4, 15);
+        ctx.fillRect(obj.x+obj.w, obj.y+45, 4, 15);
+    }
+
+    function update() {
+        if (moveLeft && player.x > 5) player.x -= player.speed;
+        if (moveRight && player.x < canvas.width - player.w - 5) player.x += player.speed;
+
+        if (frameCount % 50 === 0) spawnEnemy();
+
+        for (let i = 0; i < enemies.length; i++) {
+            enemies[i].y += gameSpeed;
+
+            if (
+                player.x < enemies[i].x + enemies[i].w &&
+                player.x + player.w > enemies[i].x &&
+                player.y < enemies[i].y + enemies[i].h &&
+                player.y + player.h > enemies[i].y
+            ) {
+                alert("BOOM! NABRAK! Skor: " + score);
+                document.location.reload();
+            }
+
+            if (enemies[i].y > canvas.height) {
+                enemies.splice(i, 1);
+                score += 10;
+                gameSpeed += 0.05;
+            }
+        }
+        scoreDisplay.innerText = score;
+        frameCount++;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Markah jalan
+        ctx.strokeStyle = "#fff";
+        ctx.setLineDash([20, 20]);
+        ctx.lineDashOffset = -frameCount * gameSpeed;
+        ctx.beginPath();
+        ctx.moveTo(150, 0); ctx.lineTo(150, canvas.height);
+        ctx.stroke();
+
+        drawCar(player);
+        enemies.forEach(enemy => drawCar(enemy));
+
+        update();
+        requestAnimationFrame(draw);
+    }
+
+    draw();
+</script>
+</body>
+</html>
